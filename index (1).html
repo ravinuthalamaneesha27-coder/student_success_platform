@@ -1,0 +1,820 @@
+Here is the complete single-file version of EduSuccess AI. Everything is built from scratch, so there are no external libraries, no CDN links and no API key, and the charts are drawn with plain SVG and CSS.
+
+```html
+<!DOCTYPE html>
+s<html lang="en">
+     
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>EduSuccess AI — Student Analytics and Success Platform</title>
+<style>
+  :root{
+    --bg:#0a0e2a; --bg2:#141043; --card:rgba(255,255,255,.06); --border:rgba(255,255,255,.10);
+    --text:#eef0ff; --muted:#9ba0c9; --purple:#8b5cf6; --purple2:#6d28d9; --pink:#d946ef;
+    --blue:#38bdf8; --green:#34d399; --amber:#fbbf24; --red:#fb7185;
+    --grad:linear-gradient(135deg,#7c3aed,#c026d3);
+    --radius:20px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    font-family:"Inter","Segoe UI",system-ui,-apple-system,Roboto,sans-serif;
+    color:var(--text);min-height:100vh;
+    background:radial-gradient(900px 500px at 85% -10%,rgba(124,58,237,.35),transparent 60%),
+               radial-gradient(700px 500px at -5% 100%,rgba(192,38,211,.18),transparent 60%),
+               linear-gradient(160deg,var(--bg),var(--bg2));
+    background-attachment:fixed;
+  }
+  button,input,select{font-family:inherit;font-size:.95rem}
+  button{cursor:pointer}
+
+  /* ---------- Layout ---------- */
+  .sidebar{
+    position:fixed;inset:0 auto 0 0;width:260px;padding:24px 18px;z-index:50;
+    background:rgba(10,14,42,.78);backdrop-filter:blur(18px);border-right:1px solid var(--border);
+    display:flex;flex-direction:column;gap:22px;transition:transform .35s ease;
+  }
+  .brand{display:flex;align-items:center;gap:12px;padding:4px 8px}
+  .logo{width:42px;height:42px;border-radius:13px;background:var(--grad);display:grid;place-items:center;font-size:1.3rem;box-shadow:0 8px 24px rgba(124,58,237,.5)}
+  .brand h2{font-size:1.1rem;line-height:1.1}
+  .brand small{color:var(--muted);font-size:.72rem}
+  nav{display:flex;flex-direction:column;gap:6px}
+  .nav-btn{
+    display:flex;align-items:center;gap:12px;padding:12px 14px;border:none;border-radius:14px;
+    background:transparent;color:var(--muted);text-align:left;font-weight:600;transition:.25s;
+  }
+  .nav-btn .ico{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:rgba(255,255,255,.06);transition:.25s}
+  .nav-btn:hover{color:#fff;background:rgba(255,255,255,.06);transform:translateX(3px)}
+  .nav-btn.active{color:#fff;background:linear-gradient(90deg,rgba(124,58,237,.45),rgba(192,38,211,.15));box-shadow:inset 0 0 0 1px rgba(167,139,250,.35)}
+  .nav-btn.active .ico{background:var(--grad)}
+  .side-foot{margin-top:auto;display:flex;flex-direction:column;gap:12px}
+  .profile{display:flex;gap:12px;align-items:center;padding:12px;border-radius:16px;background:var(--card);border:1px solid var(--border)}
+  .avatar{width:42px;height:42px;border-radius:50%;background:var(--grad);display:grid;place-items:center;font-weight:800}
+  .profile b{display:block;font-size:.92rem}.profile small{color:var(--muted)}
+  main{margin-left:260px;padding:28px 34px 60px;max-width:1500px}
+  .topbar{display:flex;align-items:center;gap:14px;margin-bottom:26px}
+  .menu-btn{display:none;width:44px;height:44px;border-radius:12px;border:1px solid var(--border);background:var(--card);color:#fff;font-size:1.2rem}
+  .topbar h1{font-size:1.65rem;letter-spacing:-.02em}
+  .topbar p{color:var(--muted);font-size:.9rem;margin-top:2px}
+  .topbar .right{margin-left:auto;display:flex;gap:10px;align-items:center}
+  .pill{padding:9px 14px;border-radius:999px;background:var(--card);border:1px solid var(--border);font-size:.82rem;color:var(--muted)}
+  .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:40}
+
+  /* ---------- Components ---------- */
+  .view{display:none;animation:fade .5s ease}
+  .view.active{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+  .grid{display:grid;gap:20px}
+  .g4{grid-template-columns:repeat(4,1fr)}
+  .g2{grid-template-columns:1.2fr 1fr}
+  .g2e{grid-template-columns:1fr 1fr}
+  .mt{margin-top:20px}
+  .card{
+    background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:22px;
+    backdrop-filter:blur(10px);transition:transform .3s,box-shadow .3s,border-color .3s;
+  }
+  .card:hover{transform:translateY(-3px);border-color:rgba(167,139,250,.4);box-shadow:0 14px 40px rgba(76,29,149,.35)}
+  .card h3{font-size:1.05rem;margin-bottom:4px}
+  .card .sub{color:var(--muted);font-size:.84rem;margin-bottom:16px}
+  .head-row{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap}
+  .banner{
+    border-radius:var(--radius);padding:28px;margin-bottom:20px;position:relative;overflow:hidden;
+    background:linear-gradient(120deg,#5b21b6,#a21caf 70%,#db2777);box-shadow:0 18px 50px rgba(124,58,237,.35);
+  }
+  .banner::after{content:"🎓";position:absolute;right:26px;top:50%;transform:translateY(-50%);font-size:5.5rem;opacity:.25}
+  .banner h2{font-size:1.5rem;margin-bottom:6px}.banner p{opacity:.9;max-width:560px;font-size:.95rem;line-height:1.5}
+  .stat{display:flex;gap:16px;align-items:center}
+  .stat .ico{width:50px;height:50px;border-radius:15px;display:grid;place-items:center;font-size:1.4rem;flex:none}
+  .stat .val{font-size:1.9rem;font-weight:800;letter-spacing:-.03em;line-height:1}
+  .stat .lbl{color:var(--muted);font-size:.82rem;margin-top:6px}
+  .delta{font-size:.78rem;font-weight:700;margin-top:4px}
+  .up{color:var(--green)}.down{color:var(--red)}
+  .ring{position:relative;width:84px;height:84px;flex:none}
+  .ring svg{transform:rotate(-90deg)}
+  .ring span{position:absolute;inset:0;display:grid;place-items:center;font-weight:800}
+  .ring circle.fg{transition:stroke-dashoffset 1.2s ease}
+  .badge{display:inline-block;padding:4px 10px;border-radius:999px;font-size:.72rem;font-weight:700}
+  .b-ok{background:rgba(52,211,153,.15);color:var(--green)}
+  .b-good{background:rgba(56,189,248,.15);color:var(--blue)}
+  .b-warn{background:rgba(251,191,36,.15);color:var(--amber)}
+  .b-bad{background:rgba(251,113,133,.15);color:var(--red)}
+
+  /* bars */
+  .bar-row{display:grid;grid-template-columns:130px 1fr 52px;gap:12px;align-items:center;margin:13px 0;font-size:.9rem}
+  .track{height:12px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden}
+  .fill{height:100%;border-radius:99px;width:var(--w);animation:grow 1.1s cubic-bezier(.2,.8,.2,1)}
+  @keyframes grow{from{width:0}}
+  .bar-row b{text-align:right}
+  .chart-wrap svg{width:100%;height:auto;display:block}
+  .draw{stroke-dasharray:1;stroke-dashoffset:1;animation:draw 1.6s ease forwards}
+  @keyframes draw{to{stroke-dashoffset:0}}
+
+  /* forms */
+  form{display:grid;gap:14px}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  label{font-size:.8rem;color:var(--muted);font-weight:600;display:grid;gap:6px}
+  input,select{
+    width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border);
+    background:rgba(255,255,255,.07);color:var(--text);outline:none;transition:.2s;
+  }
+  input:focus,select:focus{border-color:var(--purple);box-shadow:0 0 0 3px rgba(139,92,246,.25)}
+  select option{background:#17124a;color:#fff}
+  .btn{
+    border:none;border-radius:12px;padding:12px 18px;font-weight:700;color:#fff;background:var(--grad);
+    box-shadow:0 8px 22px rgba(124,58,237,.4);transition:.25s;
+  }
+  .btn:hover{transform:translateY(-2px);box-shadow:0 12px 28px rgba(192,38,211,.45)}
+  .btn:active{transform:scale(.97)}
+  .btn.ghost{background:rgba(255,255,255,.08);box-shadow:none;border:1px solid var(--border)}
+  .btn.sm{padding:8px 12px;font-size:.8rem;border-radius:10px}
+  .icon-btn{border:none;background:rgba(255,255,255,.07);color:var(--muted);width:32px;height:32px;border-radius:9px;transition:.2s}
+  .icon-btn:hover{background:rgba(251,113,133,.2);color:var(--red)}
+
+  /* table */
+  .table-wrap{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;min-width:520px}
+  th{text-align:left;color:var(--muted);font-size:.75rem;text-transform:uppercase;letter-spacing:.06em;padding:10px 12px}
+  td{padding:12px;border-top:1px solid var(--border);font-size:.9rem}
+  tr:hover td{background:rgba(255,255,255,.03)}
+
+  /* tasks */
+  .tabs{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;margin-bottom:14px}
+  .tab{
+    flex:1;min-width:64px;padding:10px 6px;border-radius:14px;border:1px solid var(--border);background:var(--card);
+    color:var(--muted);text-align:center;transition:.25s;font-weight:700
+  }
+  .tab small{display:block;font-weight:500;font-size:.7rem;margin-top:3px}
+  .tab:hover{color:#fff}
+  .tab.active{background:var(--grad);color:#fff;border-color:transparent;box-shadow:0 8px 22px rgba(124,58,237,.4)}
+  .task{
+    display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:14px;background:rgba(255,255,255,.05);
+    border:1px solid var(--border);margin-bottom:10px;transition:.25s;animation:fade .4s ease
+  }
+  .task:hover{background:rgba(255,255,255,.09)}
+  .check{
+    width:26px;height:26px;border-radius:8px;border:2px solid var(--purple);background:transparent;color:#fff;
+    display:grid;place-items:center;flex:none;transition:.2s;font-size:.85rem
+  }
+  .check.on{background:var(--grad);border-color:transparent}
+  .task .t{flex:1;min-width:0}
+  .task .t b{display:block;font-size:.93rem}
+  .task .t small{color:var(--muted)}
+  .task.done .t b{text-decoration:line-through;opacity:.5}
+  .empty{text-align:center;color:var(--muted);padding:26px 10px;font-size:.9rem}
+  .progress{height:10px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden}
+  .progress i{display:block;height:100%;background:var(--grad);border-radius:99px;transition:width .8s ease}
+
+  /* coach */
+  .rec{display:flex;gap:14px;align-items:flex-start;padding:16px;border-radius:16px;background:rgba(255,255,255,.05);border:1px solid var(--border);margin-bottom:14px}
+  .rec .ico{width:46px;height:46px;border-radius:14px;display:grid;place-items:center;font-size:1.3rem;flex:none}
+  .rec p{color:#c9cdf0;font-size:.88rem;line-height:1.55;margin:6px 0 10px}
+  .rec .top{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .chat{height:300px;overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding-right:4px;margin-bottom:12px}
+  .msg{max-width:88%;padding:11px 14px;border-radius:16px;font-size:.9rem;line-height:1.5;animation:fade .3s ease}
+  .msg.bot{background:rgba(139,92,246,.22);border:1px solid rgba(167,139,250,.3);border-bottom-left-radius:4px}
+  .msg.me{align-self:flex-end;background:var(--grad);border-bottom-right-radius:4px}
+  .chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+  .chip{border:1px solid var(--border);background:rgba(255,255,255,.06);color:var(--text);padding:7px 12px;border-radius:99px;font-size:.78rem;transition:.2s}
+  .chip:hover{background:rgba(139,92,246,.3)}
+  .chat-form{display:flex;gap:10px}
+
+  /* toast */
+  #toast{
+    position:fixed;bottom:26px;left:50%;transform:translate(-50%,120px);padding:13px 22px;border-radius:14px;z-index:99;
+    background:#1f1a5e;border:1px solid rgba(167,139,250,.5);box-shadow:0 14px 40px rgba(0,0,0,.5);transition:transform .4s cubic-bezier(.2,.9,.3,1.2);font-weight:600
+  }
+  #toast.show{transform:translate(-50%,0)}
+
+  /* ---------- Responsive ---------- */
+  @media (max-width:1150px){.g4{grid-template-columns:repeat(2,1fr)}.g2,.g2e{grid-template-columns:1fr}}
+  @media (max-width:900px){
+    .sidebar{transform:translateX(-100%)}
+    .sidebar.open{transform:none}
+    .overlay.open{display:block}
+    main{margin-left:0;padding:18px 16px 50px}
+    .menu-btn{display:block}
+    .topbar .pill{display:none}
+  }
+  @media (max-width:560px){
+    .g4{grid-template-columns:1fr}.row2{grid-template-columns:1fr}
+    .bar-row{grid-template-columns:96px 1fr 44px;font-size:.82rem}
+    .banner::after{display:none}.topbar h1{font-size:1.3rem}
+  }
+</style>
+</head>
+<body>
+
+<div class="overlay" id="overlay"></div>
+
+<aside class="sidebar" id="sidebar">
+  <div class="brand">
+    <div class="logo">🚀</div>
+    <div><h2>EduSuccess AI</h2><small>Student Success Platform</small></div>
+  </div>
+  <nav>
+    <button class="nav-btn active" data-view="dashboard"><span class="ico">🏠</span>Dashboard</button>
+    <button class="nav-btn" data-view="performance"><span class="ico">📊</span>Performance</button>
+    <button class="nav-btn" data-view="coach"><span class="ico">🤖</span>AI Study Coach</button>
+    <button class="nav-btn" data-view="planner"><span class="ico">🗓️</span>Study Planner</button>
+    <button class="nav-btn" data-view="goals"><span class="ico">🎯</span>Goals</button>
+  </nav>
+  <div class="side-foot">
+    <button class="btn ghost sm" data-action="reset">↺ Reset demo data</button>
+    <div class="profile">
+      <div class="avatar">AS</div>
+      <div><b>Aarav Sharma</b><small>B.Tech CSE · Year 2</small></div>
+    </div>
+  </div>
+</aside>
+
+<main>
+  <header class="topbar">
+    <button class="menu-btn" id="menuBtn" aria-label="Open menu">☰</button>
+    <div>
+      <h1 id="pageTitle">Dashboard</h1>
+      <p id="pageSub">Your academic overview at a glance</p>
+    </div>
+    <div class="right"><span class="pill" id="todayPill"></span></div>
+  </header>
+
+  <!-- ================= DASHBOARD ================= -->
+  <section class="view active" id="view-dashboard">
+    <div class="banner">
+      <h2 id="greeting">Welcome back!</h2>
+      <p id="bannerText"></p>
+    </div>
+    <div class="grid g4" id="statCards"></div>
+    <div class="grid g2 mt">
+      <div class="card"><h3>Subject-wise Marks</h3><p class="sub">Average percentage per subject</p><div id="dashBars"></div></div>
+      <div class="card"><h3>Performance Trend</h3><p class="sub">Overall average across exams</p><div class="chart-wrap" id="dashTrend"></div></div>
+    </div>
+    <div class="grid g2e mt">
+      <div class="card">
+        <div class="head-row"><div><h3>Top Priorities</h3><p class="sub">Subjects that need attention first</p></div>
+        <button class="btn sm ghost" data-view="coach">Open AI Coach →</button></div>
+        <div id="dashRecs"></div>
+      </div>
+      <div class="card">
+        <div class="head-row"><div><h3>Today's Tasks</h3><p class="sub" id="todaySub"></p></div>
+        <button class="btn sm ghost" data-view="planner">Planner →</button></div>
+        <div id="dashTasks"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= PERFORMANCE ================= -->
+  <section class="view" id="view-performance">
+    <div class="grid g2e">
+      <div class="card">
+        <h3>➕ Add Exam Marks</h3><p class="sub">Enter a new score — charts and recommendations update instantly.</p>
+        <form id="markForm">
+          <div class="row2">
+            <label>Subject<select id="mSubject"></select></label>
+            <label>Exam name<input id="mExam" list="examList" placeholder="e.g. Unit Test 4" required /></label>
+          </div>
+          <datalist id="examList"><option value="Unit Test 1"><option value="Quiz 2"><option value="Midterm"><option value="Unit Test 3"><option value="Assignment"></datalist>
+          <div class="row2">
+            <label>Marks obtained<input id="mScore" type="number" min="0" step="0.5" placeholder="e.g. 78" required /></label>
+            <label>Out of<input id="mMax" type="number" min="1" value="100" required /></label>
+          </div>
+          <label>Date<input id="mDate" type="date" required /></label>
+          <button class="btn" type="submit">Save Marks</button>
+        </form>
+      </div>
+      <div class="card">
+        <div class="head-row">
+          <div><h3>Trend Chart</h3><p class="sub">Track progress over time</p></div>
+          <label style="min-width:170px"><select id="trendFilter"></select></label>
+        </div>
+        <div class="chart-wrap" id="perfTrend"></div>
+      </div>
+    </div>
+    <div class="grid g2e mt">
+      <div class="card"><h3>Subject Averages</h3><p class="sub">Color shows performance level</p><div id="perfBars"></div></div>
+      <div class="card"><h3>Subject Insights</h3><p class="sub">Best, weakest and most improved</p><div id="perfInsights"></div></div>
+    </div>
+    <div class="card mt">
+      <h3>📋 All Records</h3><p class="sub">Newest first</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Date</th><th>Subject</th><th>Exam</th><th>Score</th><th>Percent</th><th></th></tr></thead>
+        <tbody id="markRows"></tbody>
+      </table></div>
+    </div>
+  </section>
+
+  <!-- ================= AI COACH ================= -->
+  <section class="view" id="view-coach">
+    <div class="grid g2">
+      <div class="card">
+        <div class="head-row"><div><h3>🤖 Personalized Recommendations</h3><p class="sub">Generated from your marks and trends — no internet needed</p></div></div>
+        <div id="coachRecs"></div>
+      </div>
+      <div class="card">
+        <h3>💬 Ask the Coach</h3><p class="sub">Try a quick question or type your own</p>
+        <div class="chips" id="chips"></div>
+        <div class="chat" id="chat"></div>
+        <form class="chat-form" id="chatForm">
+          <input id="chatInput" placeholder="Ask about weak subjects, plans, exams…" autocomplete="off" />
+          <button class="btn" type="submit">Send</button>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= PLANNER ================= -->
+  <section class="view" id="view-planner">
+    <div class="grid g2">
+      <div class="card">
+        <div class="head-row">
+          <div><h3>Weekly Study Planner</h3><p class="sub">Tap the box to mark a task complete</p></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn sm" data-action="smartPlan">✨ Smart Plan</button>
+            <button class="btn sm ghost" data-action="clearDone">Clear done</button>
+          </div>
+        </div>
+        <div class="tabs" id="dayTabs"></div>
+        <div id="taskList"></div>
+      </div>
+      <div style="display:grid;gap:20px;align-content:start">
+        <div class="card">
+          <h3>Week Progress</h3><p class="sub" id="weekSub"></p>
+          <div class="progress"><i id="weekBar" style="width:0"></i></div>
+          <p class="sub" style="margin:12px 0 0" id="weekHours"></p>
+        </div>
+        <div class="card">
+          <h3>➕ Add Task</h3><p class="sub">Plan your study sessions</p>
+          <form id="taskForm">
+            <div class="row2">
+              <label>Day<select id="tDay"></select></label>
+              <label>Subject<select id="tSubject"></select></label>
+            </div>
+            <label>Task<input id="tTitle" placeholder="e.g. Solve 20 integration problems" required /></label>
+            <label>Minutes<input id="tMins" type="number" min="5" step="5" value="45" required /></label>
+            <button class="btn" type="submit">Add Task</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= GOALS ================= -->
+  <section class="view" id="view-goals">
+    <div class="grid g2e">
+      <div class="card">
+        <h3>🎯 Target Average</h3><p class="sub">Set the overall percentage you want to reach</p>
+        <div id="goalProgress"></div>
+        <form id="targetForm" style="margin-top:18px">
+          <label>Target percentage<input id="targetInput" type="number" min="1" max="100" required /></label>
+          <button class="btn" type="submit">Update Target</button>
+        </form>
+      </div>
+      <div class="card">
+        <h3>🏆 My Goals</h3><p class="sub" id="goalSub"></p>
+        <form id="goalForm" class="chat-form" style="margin-bottom:16px">
+          <input id="goalInput" placeholder="Add a new goal…" required autocomplete="off" />
+          <button class="btn" type="submit">Add</button>
+        </form>
+        <div id="goalList"></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div id="toast"></div>
+
+<script>
+/* =========================================================
+   EduSuccess AI — all logic in plain JavaScript
+   Data is saved in your browser's localStorage.
+   ========================================================= */
+const SUBJECTS = [
+  {name:"Mathematics", icon:"📐", color:"#8b5cf6"},
+  {name:"Physics", icon:"⚛️", color:"#38bdf8"},
+  {name:"Chemistry", icon:"🧪", color:"#34d399"},
+  {name:"English", icon:"📖", color:"#fbbf24"},
+  {name:"Computer Science", icon:"💻", color:"#d946ef"}
+];
+const DAYS = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+const FULL_DAYS = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+const KEY = "edusuccess_ai_v1";
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const mean = a => a.length ? a.reduce((x,y)=>x+y,0)/a.length : 0;
+const sub = n => SUBJECTS.find(s => s.name === n) || SUBJECTS[0];
+
+/* ---------- Sample data ---------- */
+function demoData(){
+  const m = (subject, exam, score, max, date) => ({id:uid(), subject, exam, score, max, date});
+  const t = (day, subject, title, mins, done) => ({id:uid(), day, subject, title, mins, done});
+  return {
+    marks:[
+      m("Mathematics","Unit Test 1",72,100,"2026-08-15"), m("Mathematics","Quiz 2",34,50,"2026-09-02"),
+      m("Mathematics","Midterm",75,100,"2026-09-20"),     m("Mathematics","Unit Test 3",70,100,"2026-10-03"),
+      m("Physics","Unit Test 1",58,100,"2026-08-15"),     m("Physics","Quiz 2",31,50,"2026-09-02"),
+      m("Physics","Midterm",55,100,"2026-09-20"),         m("Physics","Unit Test 3",60,100,"2026-10-03"),
+      m("Chemistry","Unit Test 1",80,100,"2026-08-15"),   m("Chemistry","Quiz 2",39,50,"2026-09-02"),
+      m("Chemistry","Midterm",85,100,"2026-09-20"),       m("Chemistry","Unit Test 3",88,100,"2026-10-03"),
+      m("English","Unit Test 1",88,100,"2026-08-15"),     m("English","Quiz 2",45,50,"2026-09-02"),
+      m("English","Midterm",86,100,"2026-09-20"),         m("English","Unit Test 3",92,100,"2026-10-03"),
+      m("Computer Science","Unit Test 1",91,100,"2026-08-15"), m("Computer Science","Quiz 2",47,50,"2026-09-02"),
+      m("Computer Science","Midterm",96,100,"2026-09-20"),     m("Computer Science","Unit Test 3",95,100,"2026-10-03")
+    ],
+    tasks:[
+      t(0,"Physics","Revise Newton's laws & solve 15 numericals",60,true),
+      t(0,"Mathematics","Practice differentiation problems",45,true),
+      t(1,"Chemistry","Organic reactions flashcards",30,true),
+      t(1,"Computer Science","Build a small sorting visualizer",60,true),
+      t(2,"Physics","Watch lecture: Work, energy & power",50,true),
+      t(2,"English","Write a 300-word essay",40,false),
+      t(3,"Mathematics","Solve 2 previous-year papers (integrals)",90,false),
+      t(3,"Physics","Practice thermodynamics numericals",60,true),
+      t(4,"Mathematics","Revise matrices & determinants",45,false),
+      t(4,"Physics","Doubt-clearing: optics ray diagrams",45,false),
+      t(4,"Computer Science","Hackathon project: finish dashboard UI",90,false),
+      t(5,"Chemistry","Lab report writing",50,false),
+      t(5,"Mathematics","Mock test (timed, 1 hour)",60,false),
+      t(6,"Physics","Weekly recap & error log review",40,false),
+      t(6,"English","Read one article & note 10 new words",25,false)
+    ],
+    goals:[
+      {id:uid(), title:"Raise Physics above 70%", done:false},
+      {id:uid(), title:"Finish 2 mock tests this month", done:false},
+      {id:uid(), title:"Keep Computer Science above 90%", done:true},
+      {id:uid(), title:"Submit lab records on time", done:true}
+    ],
+    target:80
+  };
+}
+let state = load();
+let selectedDay = (new Date().getDay() + 6) % 7;   // today (Mon = 0)
+let trendSubject = "all";
+let chatLog = [];
+
+function load(){
+  try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && s.marks) return s; } catch(e){}
+  return demoData();
+}
+function save(){ try { localStorage.setItem(KEY, JSON.stringify(state)); } catch(e){} }
+
+/* ---------- Helper calculations ---------- */
+const pct = m => (m.score / m.max) * 100;
+const byDate = (a,b) => a.date.localeCompare(b.date);
+const fmt = n => (Math.round(n * 10) / 10).toString();
+
+function level(avg){
+  if (avg >= 90) return {label:"Excellent", cls:"b-ok",   hours:2, color:"#34d399"};
+  if (avg >= 75) return {label:"Good",      cls:"b-good", hours:4, color:"#38bdf8"};
+  if (avg >= 60) return {label:"Needs Work",cls:"b-warn", hours:6, color:"#fbbf24"};
+  return                 {label:"Critical",  cls:"b-bad",  hours:9, color:"#fb7185"};
+}
+function subjectStats(){
+  return SUBJECTS.map(s => {
+    const rec = state.marks.filter(m => m.subject === s.name).sort(byDate);
+    const p = rec.map(pct);
+    const avg = p.length ? mean(p) : null;
+    const delta = p.length > 1 ? p[p.length-1] - p[p.length-2] : 0;
+    return {...s, avg, delta, count: rec.length, level: avg === null ? null : level(avg)};
+  });
+}
+function overallAvg(){ return state.marks.length ? mean(state.marks.map(pct)) : 0; }
+function trendPoints(subject){
+  const list = state.marks.filter(m => subject === "all" || m.subject === subject);
+  const groups = {};
+  list.forEach(m => {
+    (groups[m.exam] = groups[m.exam] || {label:m.exam, date:m.date, vals:[]});
+    groups[m.exam].vals.push(pct(m));
+    if (m.date < groups[m.exam].date) groups[m.exam].date = m.date;
+  });
+  return Object.values(groups).sort((a,b)=>a.date.localeCompare(b.date)).map(g => ({label:g.label, value:mean(g.vals)}));
+}
+function taskStats(){
+  const total = state.tasks.length, done = state.tasks.filter(t=>t.done).length;
+  const mins = state.tasks.reduce((a,t)=>a+t.mins,0), doneMins = state.tasks.filter(t=>t.done).reduce((a,t)=>a+t.mins,0);
+  return {total, done, rate: total ? done/total*100 : 0, mins, doneMins};
+}
+
+/* ---------- UI helpers ---------- */
+function toast(msg){
+  const t = $("#toast"); t.textContent = msg; t.classList.add("show");
+  clearTimeout(toast.id); toast.id = setTimeout(()=>t.classList.remove("show"), 2400);
+}
+function ring(p, color){
+  const c = 2 * Math.PI * 34, off = c * (1 - Math.min(p,100)/100);
+  return `<div class="ring"><svg width="84" height="84" viewBox="0 0 84 84">
+    <circle cx="42" cy="42" r="34" fill="none" stroke="rgba(255,255,255,.1)" stroke-width="9"/>
+    <circle class="fg" cx="42" cy="42" r="34" fill="none" stroke="${color}" stroke-width="9" stroke-linecap="round"
+      stroke-dasharray="${c}" stroke-dashoffset="${off}"/></svg><span>${Math.round(p)}%</span></div>`;
+}
+function barChart(stats){
+  const rows = stats.filter(s => s.avg !== null);
+  if (!rows.length) return `<div class="empty">No marks yet. Add some in Performance!</div>`;
+  return rows.map(s => `
+    <div class="bar-row"><span>${s.icon} ${esc(s.name)}</span>
+      <div class="track"><div class="fill" style="--w:${s.avg}%;background:linear-gradient(90deg,${s.level.color},${s.color})"></div></div>
+      <b>${Math.round(s.avg)}%</b></div>`).join("");
+}
+function lineChart(points){
+  if (!points.length) return `<div class="empty">No data to chart yet.</div>`;
+  const W = 600, H = 260, pl = 40, pr = 20, pt = 20, pb = 44;
+  const vals = points.map(p => p.value);
+  const lo = Math.max(0, Math.floor(Math.min(...vals)/10)*10 - 10), hi = 100;
+  const x = i => points.length === 1 ? W/2 : pl + i * (W - pl - pr) / (points.length - 1);
+  const y = v => pt + (hi - v) / (hi - lo) * (H - pt - pb);
+  let grid = "";
+  for (let g = lo; g <= hi; g += 10){
+    grid += `<line x1="${pl}" x2="${W-pr}" y1="${y(g)}" y2="${y(g)}" stroke="rgba(255,255,255,.08)"/>
+             <text x="${pl-8}" y="${y(g)+4}" fill="#9ba0c9" font-size="11" text-anchor="end">${g}</text>`;
+  }
+  const path = points.map((p,i)=>`${i?"L":"M"}${x(i)},${y(p.value)}`).join(" ");
+  const area = `${path} L${x(points.length-1)},${H-pb} L${x(0)},${H-pb} Z`;
+  const dots = points.map((p,i)=>`
+    <circle cx="${x(i)}" cy="${y(p.value)}" r="6" fill="#0a0e2a" stroke="#d946ef" stroke-width="3"><title>${esc(p.label)}: ${fmt(p.value)}%</title></circle>
+    <text x="${x(i)}" y="${y(p.value)-14}" fill="#fff" font-size="12" font-weight="700" text-anchor="middle">${Math.round(p.value)}</text>
+    <text x="${x(i)}" y="${H-18}" fill="#9ba0c9" font-size="11" text-anchor="middle">${esc(p.label.length>12?p.label.slice(0,11)+"…":p.label)}</text>`).join("");
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Trend line chart">
+    <defs><linearGradient id="ag" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8b5cf6" stop-opacity=".45"/><stop offset="1" stop-color="#8b5cf6" stop-opacity="0"/></linearGradient>
+    <linearGradient id="lg" x1="0" x2="1"><stop offset="0" stop-color="#8b5cf6"/><stop offset="1" stop-color="#e879f9"/></linearGradient></defs>
+    ${grid}<path d="${area}" fill="url(#ag)"/>
+    <path class="draw" pathLength="1" d="${path}" fill="none" stroke="url(#lg)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>${dots}</svg>`;
+}
+
+/* ---------- Recommendation engine (rule-based "AI") ---------- */
+const TIPS = {
+  "Mathematics": ["Practice 10 problems daily and keep an error notebook.", "Solve timed previous-year papers to improve speed.", "Revise formulas weekly and attempt one challenge problem."],
+  "Physics": ["Rebuild concepts from first principles, then draw diagrams for every numerical.", "Group numericals by concept and practice units and dimensions.", "Teach a topic aloud to a friend to find gaps."],
+  "Chemistry": ["Use flashcards for reactions and the periodic table daily.", "Balance 10 equations a day and review mechanisms.", "Link theory to lab experiments for better recall."],
+  "English": ["Read one article daily and write a short summary.", "Practice writing a structured essay each week.", "Expand vocabulary with 5 new words a day."],
+  "Computer Science": ["Code daily: solve 2 problems on a coding platform.", "Build a small project to apply data structures.", "Review algorithms and complexity, then attempt contest problems."]
+};
+function recommend(s){
+  if (s.avg === null) return {text:"No marks recorded yet. Add a score to unlock personalized advice.", hours:0};
+  const tier = s.avg >= 90 ? 2 : s.avg >= 75 ? 2 : s.avg >= 60 ? 1 : 0;
+  let text = TIPS[s.name][tier];
+  if (s.avg < 60) text = "⚠️ Priority subject. Start with fundamentals. " + text;
+  else if (s.avg < 75) text = "Focus on consistent practice. " + text;
+  else if (s.avg < 90) text = "You're doing well! " + text;
+  else text = "Outstanding work! Maintain with light revision. " + text;
+  if (s.delta >= 5) text += " 📈 Your latest score improved by " + fmt(s.delta) + " points. Keep it going!";
+  if (s.delta <= -5) text += " 📉 Your latest score dropped by " + fmt(Math.abs(s.delta)) + " points. Revisit recent topics.";
+  return {text, hours: s.level.hours};
+}
+function sortedByNeed(){ return subjectStats().filter(s=>s.avg!==null).sort((a,b)=>a.avg-b.avg); }
+function recCard(s, withBtn){
+  const r = recommend(s);
+  return `<div class="rec">
+    <div class="ico" style="background:${s.color}33">${s.icon}</div>
+    <div style="flex:1;min-width:0">
+      <div class="top"><b>${esc(s.name)}</b><span class="badge ${s.level ? s.level.cls : ""}">${s.level ? s.level.label : "No data"}</span>
+        <span style="margin-left:auto;color:var(--muted);font-size:.82rem">${s.avg===null?"–":fmt(s.avg)+"%"}</span></div>
+      <p>${esc(r.text)}</p>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <span class="badge b-good">🕒 ${r.hours} hrs/week suggested</span>
+        ${withBtn && s.avg!==null ? `<button class="btn sm" data-action="addRec" data-subject="${esc(s.name)}">+ Add to planner</button>` : ""}
+      </div></div></div>`;
+}
+
+/* ---------- Renderers ---------- */
+function renderDashboard(){
+  const hr = new Date().getHours();
+  $("#greeting").textContent = `${hr<12?"Good morning":hr<17?"Good afternoon":"Good evening"}, Aarav! 👋`;
+  const stats = subjectStats(), ts = taskStats(), avg = overallAvg();
+  const weakest = sortedByNeed()[0];
+  $("#bannerText").textContent = weakest
+    ? `Your focus subject this week is ${weakest.name} (${Math.round(weakest.avg)}%). You've finished ${ts.done} of ${ts.total} planned tasks. Keep the momentum going!`
+    : "Add your first marks to get started.";
+  const tp = trendPoints("all"), d = tp.length > 1 ? tp[tp.length-1].value - tp[tp.length-2].value : 0;
+  const gp = Math.min(100, state.target ? avg / state.target * 100 : 0);
+  $("#statCards").innerHTML = `
+    <div class="card stat"><div class="ico" style="background:rgba(139,92,246,.25)">📈</div>
+      <div><div class="val">${fmt(avg)}%</div><div class="lbl">Average Marks</div>
+      <div class="delta ${d>=0?"up":"down"}">${d>=0?"▲":"▼"} ${fmt(Math.abs(d))} pts vs last exam</div></div></div>
+    <div class="card stat"><div class="ico" style="background:rgba(52,211,153,.2)">✅</div>
+      <div><div class="val">${ts.done}/${ts.total}</div><div class="lbl">Completed Tasks</div>
+      <div class="delta up">${fmt(ts.doneMins/60)} hrs studied</div></div></div>
+    <div class="card stat">${ring(ts.rate,"#34d399")}<div><div class="val" style="font-size:1.2rem">Weekly</div><div class="lbl">Study Progress</div></div></div>
+    <div class="card stat">${ring(gp,"#d946ef")}<div><div class="val" style="font-size:1.2rem">Goal ${state.target}%</div><div class="lbl">Target Progress</div></div></div>`;
+  $("#dashBars").innerHTML = barChart(stats);
+  $("#dashTrend").innerHTML = lineChart(tp);
+  $("#dashRecs").innerHTML = sortedByNeed().slice(0,3).map(s => recCard(s,false)).join("") || `<div class="empty">No data yet.</div>`;
+  $("#todaySub").textContent = FULL_DAYS[selectedDay === (new Date().getDay()+6)%7 ? selectedDay : (new Date().getDay()+6)%7];
+  const today = (new Date().getDay()+6)%7;
+  const list = state.tasks.filter(t => t.day === today);
+  $("#dashTasks").innerHTML = list.length ? list.map(taskHTML).join("") : `<div class="empty">Nothing planned for today. Add a task in the planner! 🎉</div>`;
+}
+
+function renderPerformance(){
+  const stats = subjectStats();
+  $("#perfBars").innerHTML = barChart(stats);
+  $("#perfTrend").innerHTML = lineChart(trendPoints(trendSubject));
+  const have = stats.filter(s => s.avg !== null);
+  if (have.length){
+    const best = [...have].sort((a,b)=>b.avg-a.avg)[0], weak = [...have].sort((a,b)=>a.avg-b.avg)[0];
+    const imp = [...have].sort((a,b)=>b.delta-a.delta)[0];
+    const row = (ic, t, s, v) => `<div class="rec"><div class="ico" style="background:rgba(255,255,255,.08)">${ic}</div><div><small style="color:var(--muted)">${t}</small><div><b>${s.icon} ${esc(s.name)}</b> <span class="badge ${s.level.cls}">${v}</span></div></div></div>`;
+    $("#perfInsights").innerHTML = row("🏅","Strongest subject",best,fmt(best.avg)+"%") + row("🚨","Needs most attention",weak,fmt(weak.avg)+"%") +
+      row("🚀","Most improved (latest exam)",imp,(imp.delta>=0?"+":"")+fmt(imp.delta)+" pts");
+  } else $("#perfInsights").innerHTML = `<div class="empty">Add marks to see insights.</div>`;
+  const rows = [...state.marks].sort((a,b)=>b.date.localeCompare(a.date));
+  $("#markRows").innerHTML = rows.length ? rows.map(m => {
+    const p = pct(m), l = level(p);
+    return `<tr><td>${esc(m.date)}</td><td>${sub(m.subject).icon} ${esc(m.subject)}</td><td>${esc(m.exam)}</td>
+      <td>${fmt(m.score)}/${fmt(m.max)}</td><td><span class="badge ${l.cls}">${fmt(p)}%</span></td>
+      <td><button class="icon-btn" title="Delete" data-action="delMark" data-id="${m.id}">🗑</button></td></tr>`;
+  }).join("") : `<tr><td colspan="6" class="empty">No records yet.</td></tr>`;
+}
+
+function renderCoach(){
+  $("#coachRecs").innerHTML = sortedByNeed().map(s => recCard(s,true)).join("") || `<div class="empty">Add marks to receive recommendations.</div>`;
+}
+
+function taskHTML(t){
+  const s = sub(t.subject);
+  return `<div class="task ${t.done?"done":""}">
+    <button class="check ${t.done?"on":""}" data-action="toggleTask" data-id="${t.id}" aria-label="Toggle complete">${t.done?"✓":""}</button>
+    <div class="t"><b>${esc(t.title)}</b><small>${s.icon} ${esc(t.subject)} · ${t.mins} min</small></div>
+    <button class="icon-btn" title="Delete" data-action="delTask" data-id="${t.id}">🗑</button></div>`;
+}
+function renderPlanner(){
+  const today = (new Date().getDay()+6)%7;
+  $("#dayTabs").innerHTML = DAYS.map((d,i) => {
+    const l = state.tasks.filter(t=>t.day===i);
+    return `<button class="tab ${i===selectedDay?"active":""}" data-action="day" data-day="${i}">${d}${i===today?" •":""}<small>${l.filter(t=>t.done).length}/${l.length}</small></button>`;
+  }).join("");
+  const list = state.tasks.filter(t => t.day === selectedDay);
+  $("#taskList").innerHTML = list.length ? list.map(taskHTML).join("") : `<div class="empty">No tasks for ${FULL_DAYS[selectedDay]}. Add one or try ✨ Smart Plan.</div>`;
+  const ts = taskStats();
+  $("#weekSub").textContent = `${ts.done} of ${ts.total} tasks completed`;
+  $("#weekBar").style.width = ts.rate + "%";
+  $("#weekHours").textContent = `${fmt(ts.doneMins/60)} of ${fmt(ts.mins/60)} planned hours finished (${Math.round(ts.rate)}%)`;
+}
+
+function renderGoals(){
+  const avg = overallAvg(), gp = Math.min(100, state.target ? avg/state.target*100 : 0);
+  $("#goalProgress").innerHTML = `
+    <div class="stat">${ring(gp,"#d946ef")}<div><div class="val">${fmt(avg)}% <small style="font-size:.9rem;color:var(--muted)">/ ${state.target}%</small></div>
+    <div class="lbl">${avg>=state.target?"🎉 Target reached!":fmt(state.target-avg)+" points to go"}</div></div></div>`;
+  $("#targetInput").value = state.target;
+  const done = state.goals.filter(g=>g.done).length;
+  $("#goalSub").textContent = `${done} of ${state.goals.length} goals achieved`;
+  $("#goalList").innerHTML = state.goals.length ? state.goals.map(g => `
+    <div class="task ${g.done?"done":""}">
+      <button class="check ${g.done?"on":""}" data-action="toggleGoal" data-id="${g.id}">${g.done?"✓":""}</button>
+      <div class="t"><b>${esc(g.title)}</b><small>${g.done?"Achieved 🎉":"In progress"}</small></div>
+      <button class="icon-btn" data-action="delGoal" data-id="${g.id}">🗑</button></div>`).join("") : `<div class="empty">No goals yet. Add one above!</div>`;
+}
+
+function renderAll(){ renderDashboard(); renderPerformance(); renderCoach(); renderPlanner(); renderGoals(); }
+
+/* ---------- Navigation ---------- */
+const TITLES = {
+  dashboard:["Dashboard","Your academic overview at a glance"],
+  performance:["Performance","Add marks and analyse your results"],
+  coach:["AI Study Coach","Personalized advice based on your data"],
+  planner:["Study Planner","Organise your week and tick off tasks"],
+  goals:["Goals","Set targets and celebrate wins"]
+};
+function show(view){
+  $$(".view").forEach(v => v.classList.toggle("active", v.id === "view-"+view));
+  $$(".nav-btn").forEach(b => b.classList.toggle("active", b.dataset.view === view));
+  $("#pageTitle").textContent = TITLES[view][0]; $("#pageSub").textContent = TITLES[view][1];
+  renderAll(); closeMenu(); window.scrollTo({top:0, behavior:"smooth"});
+}
+function openMenu(){ $("#sidebar").classList.add("open"); $("#overlay").classList.add("open"); }
+function closeMenu(){ $("#sidebar").classList.remove("open"); $("#overlay").classList.remove("open"); }
+$("#menuBtn").onclick = openMenu; $("#overlay").onclick = closeMenu;
+
+/* ---------- Click actions (event delegation) ---------- */
+document.addEventListener("click", e => {
+  const v = e.target.closest("[data-view]");
+  if (v){ show(v.dataset.view); return; }
+  const el = e.target.closest("[data-action]"); if (!el) return;
+  const id = el.dataset.id, a = el.dataset.action;
+  if (a === "toggleTask"){ const t = state.tasks.find(t=>t.id===id); t.done = !t.done; save(); renderAll(); if (t.done) toast("Task completed! 🎉"); }
+  else if (a === "delTask"){ state.tasks = state.tasks.filter(t=>t.id!==id); save(); renderAll(); toast("Task deleted"); }
+  else if (a === "delMark"){ state.marks = state.marks.filter(m=>m.id!==id); save(); renderAll(); toast("Record deleted"); }
+  else if (a === "toggleGoal"){ const g = state.goals.find(g=>g.id===id); g.done = !g.done; save(); renderAll(); if (g.done) toast("Goal achieved! 🏆"); }
+  else if (a === "delGoal"){ state.goals = state.goals.filter(g=>g.id!==id); save(); renderAll(); }
+  else if (a === "day"){ selectedDay = +el.dataset.day; renderPlanner(); }
+  else if (a === "clearDone"){ const n = state.tasks.filter(t=>t.done).length; state.tasks = state.tasks.filter(t=>!t.done); save(); renderAll(); toast(n ? `Cleared ${n} completed task(s)` : "No completed tasks to clear"); }
+  else if (a === "addRec"){ addRecTask(el.dataset.subject); }
+  else if (a === "smartPlan"){ smartPlan(); }
+  else if (a === "chip"){ ask(el.dataset.q); }
+  else if (a === "reset"){ if (confirm("Reset everything to the original demo data?")){ state = demoData(); save(); renderAll(); toast("Demo data restored"); } }
+});
+
+/* ---------- Planner helpers ---------- */
+function lightestDay(skip = []){
+  let best = 0, min = 1e9;
+  for (let i = 0; i < 7; i++){
+    if (skip.includes(i)) continue;
+    const m = state.tasks.filter(t=>t.day===i).reduce((a,t)=>a+t.mins,0);
+    if (m < min){ min = m; best = i; }
+  }
+  return best;
+}
+function addRecTask(subject){
+  const day = lightestDay();
+  state.tasks.push({id:uid(), day, subject, title:`Focused revision: ${subject}`, mins:60, done:false});
+  save(); renderAll(); toast(`Added to ${FULL_DAYS[day]} ✅`);
+}
+function smartPlan(){
+  const weak = sortedByNeed().filter(s => s.avg < 75);
+  if (!weak.length){ toast("Great job! No weak subjects to plan for 🎉"); return; }
+  let added = 0;
+  weak.forEach(s => {
+    const titles = [`Deep revision: ${s.name}`, `Practice problems: ${s.name}`];
+    const used = [];
+    titles.forEach(title => {
+      if (state.tasks.some(t => t.title === title)) return;
+      const day = lightestDay(used); used.push(day);
+      state.tasks.push({id:uid(), day, subject:s.name, title, mins: s.avg < 60 ? 75 : 50, done:false});
+      added++;
+    });
+  });
+  save(); renderAll(); toast(added ? `Smart Plan added ${added} sessions ✨` : "Smart Plan is already in your week");
+}
+
+/* ---------- Forms ---------- */
+function fillSelects(){
+  const opts = SUBJECTS.map(s => `<option>${s.name}</option>`).join("");
+  $("#mSubject").innerHTML = opts; $("#tSubject").innerHTML = opts;
+  $("#trendFilter").innerHTML = `<option value="all">All subjects</option>` + opts;
+  $("#tDay").innerHTML = FULL_DAYS.map((d,i)=>`<option value="${i}">${d}</option>`).join("");
+  $("#tDay").value = selectedDay;
+  $("#mDate").value = new Date().toISOString().slice(0,10);
+  $("#chips").innerHTML = ["Which subject should I focus on?","Make me a study plan","How do I prepare for exams?","I feel stressed"]
+    .map(q => `<button class="chip" data-action="chip" data-q="${q}">${q}</button>`).join("");
+}
+$("#markForm").addEventListener("submit", e => {
+  e.preventDefault();
+  const score = parseFloat($("#mScore").value), max = parseFloat($("#mMax").value), exam = $("#mExam").value.trim();
+  if (!exam) return toast("Please enter an exam name");
+  if (isNaN(score) || isNaN(max) || max <= 0) return toast("Enter valid numbers");
+  if (score < 0 || score > max) return toast("Marks must be between 0 and " + max);
+  state.marks.push({id:uid(), subject:$("#mSubject").value, exam, score, max, date:$("#mDate").value});
+  save(); renderAll(); e.target.reset();
+  $("#mMax").value = 100; $("#mDate").value = new Date().toISOString().slice(0,10);
+  toast(`Saved ${fmt(score/max*100)}% ✅ Recommendations updated`);
+});
+$("#trendFilter").addEventListener("change", e => { trendSubject = e.target.value; renderPerformance(); });
+$("#taskForm").addEventListener("submit", e => {
+  e.preventDefault();
+  const day = +$("#tDay").value;
+  state.tasks.push({id:uid(), day, subject:$("#tSubject").value, title:$("#tTitle").value.trim(), mins:+$("#tMins").value || 30, done:false});
+  selectedDay = day; save(); renderAll(); $("#tTitle").value = ""; toast("Task added 🗓️");
+});
+$("#goalForm").addEventListener("submit", e => {
+  e.preventDefault();
+  state.goals.push({id:uid(), title:$("#goalInput").value.trim(), done:false});
+  save(); renderAll(); $("#goalInput").value = ""; toast("Goal added 🎯");
+});
+$("#targetForm").addEventListener("submit", e => {
+  e.preventDefault();
+  const v = parseFloat($("#targetInput").value);
+  if (!(v > 0 && v <= 100)) return toast("Enter a value between 1 and 100");
+  state.target = v; save(); renderAll(); toast("Target updated to " + v + "%");
+});
+
+/* ---------- AI coach chat (rule-based, offline) ---------- */
+function coachReply(q){
+  q = q.toLowerCase();
+  const need = sortedByNeed();
+  if (!need.length) return "Add some marks first and I'll analyse them for you! 📊";
+  const weak = need[0], strong = need[need.length-1];
+  if (/focus|weak|worst|improve|priority/.test(q))
+    return `Your top priority is ${weak.name} at ${fmt(weak.avg)}%. ${recommend(weak).text} Aim for about ${weak.level.hours} hours this week. ${need[1] ? "Next, look at " + need[1].name + " (" + fmt(need[1].avg) + "%)." : ""}`;
+  if (/plan|schedule|timetable|week/.test(q))
+    return "Here's a simple weekly split based on your marks: " + need.map(s => `${s.name} ${s.level.hours}h`).join(", ") + ". Use ✨ Smart Plan in the Study Planner to add these sessions automatically.";
+  if (/exam|test|prepare|revision/.test(q))
+    return `For exam prep: 1) Start with ${weak.name}, your weakest subject. 2) Solve timed past papers. 3) Review mistakes in an error log. 4) Sleep 7+ hours. You're already strong in ${strong.name} (${fmt(strong.avg)}%), so just do light revision there.`;
+  if (/stress|anxious|tired|motivat|sad|burn|overwhelm/.test(q))
+    return "It's normal to feel pressure. Try 25-minute focus sessions with 5-minute breaks, take a short walk, and break big tasks into small ones. Your average is " + fmt(overallAvg()) + "% and you've completed " + taskStats().done + " tasks. That's real progress! 💜 Please also talk to a friend or counsellor if it feels heavy.";
+  if (/average|score|marks|how am i|progress/.test(q))
+    return `Your overall average is ${fmt(overallAvg())}% (target ${state.target}%). Strongest: ${strong.name} (${fmt(strong.avg)}%). Weakest: ${weak.name} (${fmt(weak.avg)}%).`;
+  const hit = SUBJECTS.find(s => q.includes(s.name.toLowerCase().split(" ")[0]));
+  if (hit){ const st = subjectStats().find(s=>s.name===hit.name); return `${hit.name}: ${st.avg===null?"no marks yet.":fmt(st.avg)+"% average. "+recommend(st).text}`; }
+  return "I can help with weak subjects, study plans, exam preparation, progress and motivation. Try one of the quick questions above! 😊";
+}
+function renderChat(){
+  $("#chat").innerHTML = chatLog.map(m => `<div class="msg ${m.who}">${esc(m.text)}</div>`).join("");
+  $("#chat").scrollTop = $("#chat").scrollHeight;
+}
+function ask(q){
+  if (!q.trim()) return;
+  chatLog.push({who:"me", text:q}); renderChat();
+  setTimeout(() => { chatLog.push({who:"bot", text:coachReply(q)}); renderChat(); }, 500);
+}
+$("#chatForm").addEventListener("submit", e => { e.preventDefault(); ask($("#chatInput").value); $("#chatInput").value = ""; });
+
+/* ---------- Start ---------- */
+$("#todayPill").textContent = new Date().toLocaleDateString(undefined,{weekday:"long",day:"numeric",month:"short",year:"numeric"});
+chatLog.push({who:"bot", text:"Hi Aarav! 👋 I'm your offline AI Study Coach. I analyse your marks and suggest what to study next. Ask me anything!"});
+fillSelects(); renderChat(); renderAll();
+</script>
+
+</body>
+</html>
+`
